@@ -17,7 +17,7 @@ def get_model():
 		v = tf.layers.max_pooling2d(v, 2, 2, padding='SAME')
 
 		vgg3 = tf.layers.conv2d(v, 256, 3, padding='SAME', activation=tf.nn.relu, name='conv3_1')
-		v = tf.layers.conv2d(vgg2, 256, 3, padding='SAME', activation=tf.nn.relu, name='conv3_2')
+		v = tf.layers.conv2d(vgg3, 256, 3, padding='SAME', activation=tf.nn.relu, name='conv3_2')
 		v = tf.layers.conv2d(v, 256, 3, padding='SAME', activation=tf.nn.relu, name='conv3_3')
 		v = tf.layers.max_pooling2d(v, 2, 2, padding='SAME')
 
@@ -27,145 +27,157 @@ def get_model():
 		v = tf.layers.max_pooling2d(v, 2, 2, padding='SAME')
 
 		vgg5 = tf.layers.conv2d(v, 512, 3, padding='SAME', activation=tf.nn.relu, name='conv5_1')
+		print('vgg:', vgg1.shape, vgg2.shape, vgg3.shape, vgg4.shape, vgg5.shape)
 
 		# reference texture vgg
 		vgg1_ref = tf.layers.conv2d(ref, 64, 3, padding='SAME', activation=tf.nn.relu, name='conv1_1', reuse=True)
-		v = tf.layers.conv2d(vgg1, 64, 3, padding='SAME', activation=tf.nn.relu, name='conv1_2', reuse=True)
+		v = tf.layers.conv2d(vgg1_ref, 64, 3, padding='SAME', activation=tf.nn.relu, name='conv1_2', reuse=True)
 		v = tf.layers.max_pooling2d(v, 2, 2, padding='SAME')
 
 		vgg2_ref = tf.layers.conv2d(v, 128, 3, padding='SAME', activation=tf.nn.relu, name='conv2_1', reuse=True)
-		v = tf.layers.conv2d(vgg2, 128, 3, padding='SAME', activation=tf.nn.relu, name='conv2_2', reuse=True)
+		v = tf.layers.conv2d(vgg2_ref, 128, 3, padding='SAME', activation=tf.nn.relu, name='conv2_2', reuse=True)
 		v = tf.layers.max_pooling2d(v, 2, 2, padding='SAME')
 
 		vgg3_ref = tf.layers.conv2d(v, 256, 3, padding='SAME', activation=tf.nn.relu, name='conv3_1', reuse=True)
-		v = tf.layers.conv2d(vgg2, 256, 3, padding='SAME', activation=tf.nn.relu, name='conv3_2', reuse=True)
+		v = tf.layers.conv2d(vgg3_ref, 256, 3, padding='SAME', activation=tf.nn.relu, name='conv3_2', reuse=True)
 		v = tf.layers.conv2d(v, 256, 3, padding='SAME', activation=tf.nn.relu, name='conv3_3', reuse=True)
 		v = tf.layers.max_pooling2d(v, 2, 2, padding='SAME')
 
 		vgg4_ref = tf.layers.conv2d(v, 512, 3, padding='SAME', activation=tf.nn.relu, name='conv4_1', reuse=True)
-		v = tf.layers.conv2d(vgg4, 512, 3, padding='SAME', activation=tf.nn.relu, name='conv4_2', reuse=True)
+		v = tf.layers.conv2d(vgg4_ref, 512, 3, padding='SAME', activation=tf.nn.relu, name='conv4_2', reuse=True)
 		v = tf.layers.conv2d(v, 512, 3, padding='SAME', activation=tf.nn.relu, name='conv4_3', reuse=True)
 		v = tf.layers.max_pooling2d(v, 2, 2, padding='SAME')
 
 		vgg5_ref = tf.layers.conv2d(v, 512, 3, padding='SAME', activation=tf.nn.relu, name='conv5_1', reuse=True)
+		print('vgg_ref:', vgg1_ref.shape, vgg2_ref.shape, vgg3_ref.shape, vgg4_ref.shape, vgg5_ref.shape)
 
 
 	with tf.variable_scope('encoding_network'):
+		print('encoding')
 		# texture encode
-		v = tf.conv2d(vgg5, 512, 1, padding='SAME', name='conv1')
+		v = tf.layers.conv2d(vgg5, 512, 1, padding='SAME', name='conv1')
 		v = resblock(v, 512, name='res1')
 		v = tf.keras.layers.UpSampling2D()(v)
 		v = tf.concat([v, vgg4], axis=3)
+		print(v.shape)
 
-		v = tf.conv2d(v, 512, 1, padding='SAME', name='conv2')
+		v = tf.layers.conv2d(v, 512, 1, padding='SAME', name='conv2')
 		v = resblock(v, 512, name='res2')
 		v = tf.keras.layers.UpSampling2D()(v)
 		v = tf.concat([v, vgg3], axis=3)
+		print(v.shape)
 
-		v = tf.conv2d(v, 256, 1, padding='SAME', name='conv3')
+		v = tf.layers.conv2d(v, 256, 1, padding='SAME', name='conv3')
 		v = resblock(v, 256, name='res3')
 		v = tf.keras.layers.UpSampling2D()(v)
 		v = tf.concat([v, vgg2], axis=3)
+		print(v.shape)
 
-		v = tf.conv2d(v, 128, 1, padding='SAME', name='conv4')
+		v = tf.layers.conv2d(v, 128, 1, padding='SAME', name='conv4')
 		v = resblock(v, 128, name='res4')
 		v = tf.keras.layers.UpSampling2D()(v)
 		v = tf.concat([v, vgg1], axis=3)
+		print(v.shape)
 
-		v = tf.conv2d(v, 128, 1, padding='SAME', name='conv5')
+		v = tf.layers.conv2d(v, 128, 1, padding='SAME', name='conv5')
 		v = resblock(v, 128, name='res5')
 
-		encode_texture = tf.conv2d(v, 64, 1, padding='SAME', name='conv_out')
+		encode_texture = tf.layers.conv2d(v, 64, 1, padding='SAME', name='conv_out')
+		print('encode_texture:', encode_texture.shape)
 
 
 		# reference texture encode
-		v = tf.conv2d(vgg5_ref, 512, 1, padding='SAME', name='conv1', reuse=True)
+		v = tf.layers.conv2d(vgg5_ref, 512, 1, padding='SAME', name='conv1', reuse=True)
 		v = resblock(v, 512, name='res1', reuse=True)
 		v = tf.keras.layers.UpSampling2D()(v)
 		v = tf.concat([v, vgg4_ref], axis=3)
+		print(v.shape)
 
-		v = tf.conv2d(v, 512, 1, padding='SAME', name='conv2', reuse=True)
+		v = tf.layers.conv2d(v, 512, 1, padding='SAME', name='conv2', reuse=True)
 		v = resblock(v, 512, name='res2', reuse=True)
 		v = tf.keras.layers.UpSampling2D()(v)
 		v = tf.concat([v, vgg3_ref], axis=3)
+		print(v.shape)
 
-		v = tf.conv2d(v, 256, 1, padding='SAME', name='conv3', reuse=True)
+		v = tf.layers.conv2d(v, 256, 1, padding='SAME', name='conv3', reuse=True)
 		v = resblock(v, 256, name='res3', reuse=True)
 		v = tf.keras.layers.UpSampling2D()(v)
 		v = tf.concat([v, vgg2_ref], axis=3)
+		print(v.shape)
 
-		v = tf.conv2d(v, 128, 1, padding='SAME', name='conv4', reuse=True)
+		v = tf.layers.conv2d(v, 128, 1, padding='SAME', name='conv4', reuse=True)
 		v = resblock(v, 128, name='res4', reuse=True)
 		v = tf.keras.layers.UpSampling2D()(v)
 		v = tf.concat([v, vgg1_ref], axis=3)
+		print(v.shape)
 
-		v = tf.conv2d(v, 128, 1, padding='SAME', name='conv5', reuse=True)
+		v = tf.layers.conv2d(v, 128, 1, padding='SAME', name='conv5', reuse=True)
 		v = resblock(v, 128, name='res5', reuse=True)
 
-		encode_ref = tf.conv2d(v, 64, 1, padding='SAME', name='conv_out', reuse=True)
+		encode_ref = tf.layers.conv2d(v, 64, 1, padding='SAME', name='conv_out', reuse=True)
+		print('encode_ref:', encode_ref.shape)
 
 	cor = correlation(encode_texture, encode_ref)
+	print('cor:', cor.shape)
 
 	with tf.variable_scope('decoding_network'):
-		d_cor = tf.image.resize_images(cor, [16, 16])
-		d_texture = tf.image.resize_image(encode_texture, [16, 16])
-		d_v = tf.conv2d(vgg5, 64, 1, padding='SAME', name='conv1_1')
-		v = tf.concat([d_v, d_cor, d_texture], axis=3)
+		print('decoding')
 
-		v = tf.conv2d(v, 64, 1, padding='SAME', name='conv2_1')
+		d_cor = tf.image.resize_images(cor, [16, 16])
+		d_texture = tf.image.resize_images(encode_texture, [16, 16])
+		d_v = tf.layers.conv2d(vgg5, 64, 1, padding='SAME', name='conv1_1')
+		v = tf.concat([d_v, d_cor, d_texture], axis=3)
+		print(v.shape)
+
+		v = tf.layers.conv2d(v, 64, 1, padding='SAME', name='conv2_1')
 		v = resblock(v, 64, name='res2')
 		v = tf.keras.layers.UpSampling2D()(v)
-		d_cor = tf.image.resize_image(cor, [32, 32])
-		d_v = tf.conv2d(vgg4, 64, 1, padding='SAME', name='conv2_2')
-		v = tf.concat([d_v, d_cor, v])
+		d_cor = tf.image.resize_images(cor, [32, 32])
+		d_v = tf.layers.conv2d(vgg4, 64, 1, padding='SAME', name='conv2_2')
+		v = tf.concat([d_v, d_cor, v], axis=3)
+		print(v.shape)
 
-		v = tf.conv2d(v, 64, 1, padding='SAME', name='conv3_1')
+		v = tf.layers.conv2d(v, 64, 1, padding='SAME', name='conv3_1')
 		v = resblock(v, 64, name='res3')
 		v = tf.keras.layers.UpSampling2D()(v)
-		d_cor = tf.image.resize_image(cor, [32, 32])
-		d_v = tf.conv2d(vgg3, 64, 1, padding='SAME', name='conv3_2')
-		v = tf.concat([d_v, d_cor, v])
+		d_cor = tf.image.resize_images(cor, [64, 64])
+		d_v = tf.layers.conv2d(vgg3, 64, 1, padding='SAME', name='conv3_2')
+		v = tf.concat([d_v, d_cor, v], axis=3)
+		print(v.shape)
 
-		v = tf.conv2d(v, 64, 1, padding='SAME', name='conv4_1')
+		v = tf.layers.conv2d(v, 64, 1, padding='SAME', name='conv4_1')
 		v = resblock(v, 64, name='res4')
 		v = tf.keras.layers.UpSampling2D()(v)
-		d_cor = tf.image.resize_image(cor, [32, 32])
-		d_v = tf.conv2d(vgg2, 64, 1, padding='SAME', name='conv4_2')
-		v = tf.concat([d_v, d_cor, v])
+		d_cor = tf.image.resize_images(cor, [128, 128])
+		d_v = tf.layers.conv2d(vgg2, 64, 1, padding='SAME', name='conv4_2')
+		v = tf.concat([d_v, d_cor, v], axis=3)
+		print(v.shape)
 
-		v = tf.conv2d(v, 64, 1, padding='SAME', name='conv5_1')
+		v = tf.layers.conv2d(v, 64, 1, padding='SAME', name='conv5_1')
 		v = resblock(v, 64, name='res5')
 		v = tf.keras.layers.UpSampling2D()(v)
-		d_cor = tf.image.resize_image(cor, [32, 32])
-		d_v = tf.conv2d(vgg1, 64, 1, padding='SAME', name='conv5_2')
-		v = tf.concat([d_v, d_cor, v])
+		# d_cor = tf.image.resize_images(cor, [256, 256])
+		d_v = tf.layers.conv2d(vgg1, 64, 1, padding='SAME', name='conv5_2')
+		v = tf.concat([d_v, cor, v], axis=3)
+		print(v.shape)
 
-		v = tf.conv2d(v, 64, 1, padding='SAME', name='conv6_1')
+		v = tf.layers.conv2d(v, 64, 1, padding='SAME', name='conv6_1')
 		v = resblock(v, 64, name='res6')
 
-		decode_mask = tf.conv2d(v, 1, 1, padding='SAME', name='conv_out')
+		decode_mask = tf.layers.conv2d(v, 1, 1, padding='SAME', activation=tf.sigmoid, name='conv_out')
+		print('decode_out:', decode_mask.shape)
 
 	return texture, ref, label, decode_mask
 
-@autograph.convert()
+
 def correlation(texture, ref):
 	texture = tf.nn.softmax(texture)
 	ref = tf.nn.softmax(ref)
-	texture = tf.image.resize_image_with_crop_or_pad(texture, 320, 320)
-	cor = []
-	autograph.set_element_type(cor, tf.float32)
-	for i in range(256):
-		for j in range(256):
-			texture_patch = tf.image.crop_to_bounding_box(texture, i, j, 64, 64)
-			m = tf.multiply(tf.nn.l2_normalize(texture_patch, 1), tf.nn.l2_normalize(ref, 1))
-			l = tf.reduce_sum(m, axis=1)
-			l = tf.reduce_sum(l, axis=1)
-			l = tf.reduce_sum(l, axis=1)
-			cor.append(l)
-	cor = autograph.stack(cor)
-	cor = tf.reshape(cor, (256, 256, 5, 1))
-	cor = tf.transpose(cor, [2, 0, 1, 3])
+	texture = tf.nn.l2_normalize(texture, 3)
+	ref = tf.nn.l2_normalize(ref, 3)
+	cor = tf.nn.conv2d(texture, ref, [1, 1, 1, 1], padding='SAME', name='correlation')
 	return cor
+
 
 def resblock(input, filters, name, reuse=None):
 	with tf.variable_scope(name):

@@ -8,7 +8,7 @@ class Data_loader:
 		self.batch_size = batch_size
 		self.max_region = max_region
 		self.ref_texture = textures[:,96:160,96:160,:]
-	def get_batch_data():
+	def get_batch_data(self):
 		# generate mixed texture image, reference patch, and reference mask
 		batch, mask, ref_ind = generate_collages(self.textures, self.batch_size, self.max_region)
 		ref_patch = self.ref_texture[ref_ind]
