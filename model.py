@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow.contrib import autograph
 
-def get_model(is_training=True):
+def get_model(is_training):
 	texture = tf.placeholder(tf.float32, shape=(None, 256, 256, 3), name='texture_input')
 	ref = tf.placeholder(tf.float32, shape=(None, 64, 64, 3), name='ref_input')
 	label = tf.placeholder(tf.float32, shape=(None, 256, 256, 1), name='label')
