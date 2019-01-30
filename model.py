@@ -208,9 +208,9 @@ def norm_to_one(t):
 def resblock(input, filters, name, reuse=None, is_training=True):
 	with tf.variable_scope(name):
 		r = tf.layers.conv2d(input, filters, 3, padding='SAME', activation=tf.nn.relu, name='conv1', reuse=reuse)
-		r = tf.layers.batch_normalization(r, training=is_training, reuse=reuse)
+		# r = tf.layers.batch_normalization(r, training=is_training, reuse=reuse)
 		r = tf.layers.conv2d(r, filters, 3, padding='SAME', activation=tf.nn.relu, name='conv2', reuse=reuse)
-		r = tf.layers.batch_normalization(r, training=is_training, reuse=reuse)
+		# r = tf.layers.batch_normalization(r, training=is_training, reuse=reuse)
 		r = tf.layers.conv2d(r, filters, 3, padding='SAME', name='conv3', reuse=reuse)
 		# r = tf.layers.batch_normalization(r, training=is_training, reuse=reuse)
 		r = tf.add(input, r)

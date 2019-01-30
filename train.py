@@ -35,7 +35,9 @@ def train(data_path, batch_size, max_steps, eval_n_step, init_lr=1e-5):
 	loss = tf.keras.backend.binary_crossentropy(label, decode_mask)
 	loss = tf.reduce_mean(loss)
 	print(decode_mask.shape, label.shape, loss.shape)
-	# train_op = opt.minimize(loss=loss, global_step=tf.train.get_global_step())
+	# update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+	# with tf.control_dependencies(update_ops):
+		# train_op = opt.minimize(loss=loss, global_step=tf.train.get_global_step())
 	train_op = opt.minimize(loss)
 
 	saver = tf.train.Saver()
@@ -95,7 +97,7 @@ def train(data_path, batch_size, max_steps, eval_n_step, init_lr=1e-5):
 
 				tic = time.time()
 
-			if (i + 1) % 4000 == 0:
+			if (i + 1) % 400 == 0:
 				learning_rate /= 2
 				print('setting leaning rate to:', learning_rate)
 
