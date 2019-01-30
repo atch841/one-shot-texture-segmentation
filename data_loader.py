@@ -12,4 +12,4 @@ class Data_loader:
 		# generate mixed texture image, reference patch, and reference mask
 		batch, mask, ref_ind = generate_collages(self.textures, self.batch_size, self.max_region)
 		ref_patch = self.ref_texture[ref_ind]
-		return batch, mask, ref_patch
+		return batch/255, mask, ref_patch/255

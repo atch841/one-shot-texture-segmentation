@@ -7,7 +7,7 @@ import numpy as np
 from sys import stdout
 
 def weighted_cross_entropy(y_pred, y_gt):
-	l = tf.reduce_sum(tf.multiply(y_gt, tf.log(y_pred+10e-15)), axis=1)
+	l = tf.reduce_sum(tf.multiply(y_gt, tf.log(y_pred+10e-50)), axis=1) # +10e-15
 	l = tf.reduce_sum(l, axis=1)
 	l = tf.reduce_sum(l, axis=1)
 	n = tf.reduce_sum(y_gt, axis=1)
@@ -21,33 +21,40 @@ def total_loss(y_pred, y_gt):
 
 
 # @autograph.convert(recursive=True)
-def train(data_path, batch_size, max_steps, eval_n_step, lr=10e-5):
+def train(data_path, batch_size, max_steps, eval_n_step, init_lr=1e-5):
 	texture, ref, label, decode_mask = get_model()
 	dl_train = Data_loader(data_path['train'], batch_size)
 	dl_val = Data_loader(data_path['val'], batch_size)
-	opt = tf.train.AdamOptimizer(learning_rate=lr)
+	lr = tf.placeholder(tf.float32)
+	learning_rate = init_lr
+	# opt = tf.train.AdamOptimizer(learning_rate=lr)
+	opt = tf.contrib.opt.NadamOptimizer(learning_rate=lr)
 
-	loss = total_loss(decode_mask, label)
+	# loss = total_loss(decode_mask, label)
+	loss = tf.keras.backend.binary_crossentropy(label, decode_mask)
+	loss = tf.reduce_mean(loss)
 	print(decode_mask.shape, label.shape, loss.shape)
 	# train_op = opt.minimize(loss=loss, global_step=tf.train.get_global_step())
 	train_op = opt.minimize(loss)
 
 	saver = tf.train.Saver()
+	saver_best = tf.train.Saver()
 	init = tf.global_variables_initializer()
-	config = tf.ConfigProto()
-	config.gpu_options.allow_growth = True
 
 	best_loss = np.inf
 	loss_log = {'train':[], 'val':[]}
+	no_best_cnt = 0
 	with tf.Session() as sess:
-		sess.run(init)
+		# sess.run(init)
+		saver.restore(sess, '/fast_data/one_shot_texture_models/best_model0.51105') #55298
 		cur_train_loss = 0
 		tic = time.time()
 		for i in range(max_steps):
-			stdout.write('\r' + str(i))
-			stdout.flush()
 			data = dl_train.get_batch_data()	# batch, mask, ref
-			_, train_loss = sess.run([train_op, loss], feed_dict={texture: data[0], ref:data[2], label: data[1]})
+			_, train_loss = sess.run([train_op, loss], feed_dict={texture: data[0], ref:data[2], label: data[1], lr: learning_rate})
+			stdout.write('\r%d, %.5f' % (i, train_loss))
+			stdout.flush()
+			# print(train_loss)
 			cur_train_loss += train_loss
 
 			if i % eval_n_step == 0:
@@ -59,13 +66,16 @@ def train(data_path, batch_size, max_steps, eval_n_step, lr=10e-5):
 				for _ in range(10):
 					test_data = dl_val.get_batch_data()
 					val_loss += sess.run(loss, feed_dict={texture: test_data[0], ref:test_data[2], label: test_data[1]})
-				val_loss /= batch_size * 10
+				val_loss /= 10
 				if val_loss < best_loss:
 					best_loss = val_loss
 					print('saving best model (%.5f)' % best_loss)
-					saver.save(sess, '/fast_data/one_shot_texture_models/best_model')
+					saver_best.save(sess, '/fast_data/one_shot_texture_models/best_model%.5f' % best_loss)
+					no_best_cnt = 0
+				else:
+					no_best_cnt += 1
 
-				cur_train_loss /= batch_size * eval_n_step
+				cur_train_loss /= eval_n_step
 
 				print('%7d/%7d training loss: %.5f, validation loss: %.5f (%d sec)' % (i, max_steps, cur_train_loss, val_loss, toc - tic))
 				loss_log['train'].append(cur_train_loss)
@@ -74,6 +84,11 @@ def train(data_path, batch_size, max_steps, eval_n_step, lr=10e-5):
 				cur_train_loss = 0
 
 				saver.save(sess, '/fast_data/one_shot_texture_models/model', global_step=i)
+
+				if no_best_cnt > 10:
+					learning_rate /= 2
+					print('setting leaning rate to:', learning_rate)
+					no_best_cnt = 0
 
 				tic = time.time()
 
@@ -85,4 +100,4 @@ if __name__ == '__main__':
 		'train': 'train_texture.npy',
 		'val': 'val_texture.npy'
 	}
-	train(data_path, 8, 2000000, 100)
+	train(data_path, 8, 2000000, 10)
